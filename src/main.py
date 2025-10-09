@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -12,10 +14,13 @@ import json
 import asyncio
 import uvicorn
 
+from src.core.config import BASE_DIR
+from src.core.logging_config import setup_logging
 from src.meas_control import DAQ_34970A
 from web_socket import ConnectionManager
 
-# Настройка логирования
+# Logging setup
+setup_logging()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -126,8 +131,8 @@ app.add_middleware(
 )
 
 # Mount static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount('static', StaticFiles(directory=Path(BASE_DIR, 'static')), name="static")
+templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
 
 
 if __name__ == "__main__":

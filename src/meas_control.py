@@ -80,7 +80,7 @@ logger = logging.getLogger("visa_client")
 
 class DAQ_34970A():
     def __init__(self, channels: list = None):
-        self.channels = ['205','206','207','208','209','210',] if not channels else self.make_channels_str(channels) # need to change
+        self.channels = channels if not channels else ['205','206','207','208','209','210',]
         self.__device_name = '34970A'
         self.rm = None
         self.instrument = None

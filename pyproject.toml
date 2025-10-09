@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.118.2",
+    "pandas>=2.3.3",
+    "python-dotenv>=1.1.1",
     "pyvisa>=1.15.0",
     "pyvisa-py>=0.8.1",
+    "uvicorn>=0.37.0",
 ]

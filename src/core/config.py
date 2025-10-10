@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 load_dotenv()
@@ -22,4 +22,11 @@ DB_URL = os.environ.get('DB_URL')
 
 if __name__ == '__main__':
     print(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    print(Path(__file__).resolve().parent.parent)
+    print(f'{BASE_DIR=}')
+
+    print(f'DB_HOST: {DB_HOST}\n',
+          f'DB_PORT: {DB_PORT}\n',
+          f'DB_NAME: {DB_NAME}\n',
+          f'DB_USER: {DB_USER}\n',
+          f'DB_PASS: {DB_PASS}\n',
+          f'DB_URL: {DB_URL}\n')

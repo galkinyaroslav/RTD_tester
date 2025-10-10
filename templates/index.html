@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг PT100 - Agilent 34970</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="../static/styles.css">
-
+<!--    <link rel="stylesheet" href="../static/styles.css">-->
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 </head>
 <body>
     <div class="connection-status disconnected" id="connectionStatus">
@@ -71,6 +71,7 @@
             <canvas id="temperatureChart"></canvas>
         </div>
     </div>
+
     <script src="../scripts/script.js"></script>
 </body>
 </html>

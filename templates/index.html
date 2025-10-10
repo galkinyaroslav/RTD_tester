@@ -6,7 +6,7 @@
     <title>Мониторинг PT100 - Agilent 34970</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!--    <link rel="stylesheet" href="../static/styles.css">-->
-    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 </head>
 <body>
     <div class="connection-status disconnected" id="connectionStatus">
@@ -46,23 +46,46 @@
         </div>
 
         <div class="data-grid" id="dataGrid">
+<!--            uncomment for addition RTDs-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 201</h3>-->
+<!--                <div class="temperature">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 202</h3>-->
+<!--                <div class="temperature">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 203</h3>-->
+<!--                <div class="temperature">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 204</h3>-->
+<!--                <div class="temperature">&#45;&#45; °C</div>-->
+<!--            </div>-->
             <div class="data-card">
-                <h3>Канал 101</h3>
+                <h3>Канал 205</h3>
                 <div class="temperature">-- °C</div>
-                <div class="resistance">-- Ω</div>
-                <div class="timestamp">--</div>
             </div>
             <div class="data-card">
-                <h3>Канал 102</h3>
+                <h3>Канал 206</h3>
                 <div class="temperature">-- °C</div>
-                <div class="resistance">-- Ω</div>
-                <div class="timestamp">--</div>
             </div>
             <div class="data-card">
-                <h3>Канал 103</h3>
+                <h3>Канал 207</h3>
                 <div class="temperature">-- °C</div>
-                <div class="resistance">-- Ω</div>
-                <div class="timestamp">--</div>
+            </div>
+            <div class="data-card">
+                <h3>Канал 208</h3>
+                <div class="temperature">-- °C</div>
+            </div>
+            <div class="data-card">
+                <h3>Канал 209</h3>
+                <div class="temperature">-- °C</div>
+            </div>
+            <div class="data-card">
+                <h3>Канал 210</h3>
+                <div class="temperature">-- °C</div>
             </div>
         </div>
 
@@ -72,6 +95,6 @@
         </div>
     </div>
 
-    <script src="../scripts/script.js"></script>
+<!--    <script src="/static/js/script.js"></script>-->
 </body>
 </html>

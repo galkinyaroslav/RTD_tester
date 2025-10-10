@@ -114,7 +114,7 @@ button:disabled {
     padding: 20px;
     border-radius: 10px;
     text-align: center;
-    color: white;
+    color: #666;
     font-weight: 600;
 }
 
@@ -135,13 +135,26 @@ button:disabled {
     background: #6c757d;
 }
 
+/*.data-grid {*/
+/*    display: grid;*/
+/*    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));*/
+/*    gap: 25px;*/
+/*    margin-bottom: 40px;*/
+/*}*/
+
 .data-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-    margin-bottom: 40px;
+  display: grid;
+  gap: 25px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* максимум 3 */
 }
 
+@media (max-width: 950px) {   /* 3*300 + 2*25 = 950px */
+  .data-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 625px) {   /* 2*300 + 25 = 625px */
+  .data-grid { grid-template-columns: 1fr; }
+}
 .data-card {
     background: white;
     border: 1px solid #e0e0e0;

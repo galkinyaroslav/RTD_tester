@@ -26,11 +26,11 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     return Settings()
 
-settings = get_settings()
+# settings = get_settings()
 
 
 if __name__ == '__main__':
     print(f'{BASE_DIR=}')
 
-    # settings = get_settings()
+    settings = get_settings()
     print(settings)

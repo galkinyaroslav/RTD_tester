@@ -7,11 +7,15 @@ from contextlib import asynccontextmanager
 
 import logging
 import uvicorn
+from starlette.datastructures import State
 
-import src.glob as glob
-from src.routers import router, pt100_controller
-from src.core.config import BASE_DIR
+from src.state import MeasurementState
+from src.routers import router
+from src.meas_control import DAQ_34970A
+from src.core.config import BASE_DIR, get_settings
 from src.core.logging_config import setup_logging
+from src.web_socket import ConnectionManager
+
 
 # Logging setup
 setup_logging()
@@ -23,13 +27,21 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Run apt PT100 Monitor")
-    yield
+    app.state.measurement = MeasurementState()
+    app.state.ws_connection_manager = ConnectionManager()
+    app.state.instrument = DAQ_34970A()
+    app.state.dot_env = get_settings()
+
+    yield # APP IS WORKING!
+
     # Shutdown
-    glob.is_measuring = False
-    glob.is_recording = False
-    if pt100_controller.connected:
-        pt100_controller.disconnect()
+    app.state.measurement.is_measuring = False
+    app.state.measurement.is_recording = False
+    if app.state.instrument.connected:
+        app.state.instrument.disconnect()
+    # app.state.instrument.close()
     logger.info("Stop apt PT100 Monitor")
+
 
 
 app = FastAPI(
@@ -38,6 +50,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+app.state: State  # type hint для IDE
+
 
 # CORS middleware
 app.add_middleware(

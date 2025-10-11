@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from _datetime import datetime
 import time
 
@@ -9,6 +10,7 @@ from src.meas_control import DAQ_34970A
 from src.state import MeasurementState
 from src.web_socket import ConnectionManager
 
+logger = logging.getLogger(__name__)
 
 def measurement_loop(state: MeasurementState, pt100_controller: DAQ_34970A, manager: ConnectionManager):
     """Цикл измерения в отдельном потоке"""
@@ -17,7 +19,7 @@ def measurement_loop(state: MeasurementState, pt100_controller: DAQ_34970A, mana
         try:
             measurements = pt100_controller.read_data()
             if measurements:
-                current_data = measurements
+                state.current_data = measurements
 
                 # Асинхронная рассылка данных через WebSocket
                 asyncio.run_coroutine_threadsafe(
@@ -43,9 +45,8 @@ def measurement_loop(state: MeasurementState, pt100_controller: DAQ_34970A, mana
             logger.error(f"Error in measurement cycle: {e}")
             time.sleep(1)
 
-def save_to_excel(state, logger):
+def save_to_excel(state ):
     """Сохранение данных из буфера в Excel"""
-    # global data_buffer
 
     if state.data_buffer:
         try:
@@ -59,7 +60,7 @@ def save_to_excel(state, logger):
 
             df.to_excel(state.excel_filename, index=False)
             logger.info(f"Данные сохранены в {state.excel_filename}, записей: {len(state.data_buffer)}")
-            data_buffer = []
+            state.data_buffer = []
             return True
         except Exception as e:
             logger.error(f"Ошибка сохранения в Excel: {e}")

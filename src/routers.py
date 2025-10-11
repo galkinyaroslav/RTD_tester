@@ -13,14 +13,16 @@ import json
 from fastapi.templating import Jinja2Templates
 
 from src.core.config import BASE_DIR
+from src.logic import measurement_loop, save_to_excel
 from src.state import MeasurementState
-from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state
+from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state, \
+    get_templates_state
 from src.meas_control import DAQ_34970A
 from src.web_socket import ConnectionManager
 
-logger = logging.getLogger("visa_client")
+logger = logging.getLogger(__name__)
 
-templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
+# templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
 
 # pt100_controller = DAQ_34970A()
 
@@ -34,7 +36,8 @@ router = APIRouter(
 
 
 @router.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request,
+                    templates: Jinja2Templates = Depends(get_templates_state)):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -65,7 +68,7 @@ async def start_measurement(state: MeasurementState = Depends(get_measurement_st
         if pt100_controller.connect():
             if pt100_controller.configure():
                 state.is_measuring = True
-                measurement_thread = threading.Thread(target=measurement_loop, args=(pt100_controller,))
+                measurement_thread = threading.Thread(target=measurement_loop, args=(state, pt100_controller, manager))
                 measurement_thread.daemon = True
                 measurement_thread.start()
 
@@ -82,8 +85,9 @@ async def start_measurement(state: MeasurementState = Depends(get_measurement_st
 
 
 @router.post("/api/stop")
-async def stop_measurement(request: Request):
-    state = request.app.state.measurement
+async def stop_measurement(pt100_controller: DAQ_34970A = Depends(get_instrument_state),
+                           state: MeasurementState = Depends(get_measurement_state),
+                           manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
 
     state.is_measuring = False
     state.is_recording = False
@@ -99,8 +103,9 @@ async def stop_measurement(request: Request):
 
 
 @router.post("/api/record/start")
-async def start_recording(request: Request):
-    state = request.app.state.measurement
+async def start_recording(state: MeasurementState = Depends(get_measurement_state),
+                          manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
+
     if state.is_measuring:
         state.is_recording = True
 
@@ -116,9 +121,8 @@ async def start_recording(request: Request):
 
 
 @router.post("/api/record/stop")
-async def stop_recording(request: Request):
-    state = request.app.state.measurement
-
+async def stop_recording(state: MeasurementState = Depends(get_measurement_state),
+                         manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
     state.is_recording = False
     save_to_excel()
     await manager.broadcast(json.dumps({
@@ -131,9 +135,8 @@ async def stop_recording(request: Request):
 
 
 @router.get("/api/status")
-async def get_status(request: Request):
-    state = request.app.state.measurement
-
+async def get_status(state: MeasurementState = Depends(get_measurement_state),
+                     pt100_controller: DAQ_34970A = Depends(get_instrument_state),):
     return {
         "measuring": state.is_measuring,
         "recording": state.is_recording,
@@ -141,10 +144,9 @@ async def get_status(request: Request):
     }
 
 
-@router.get("/api/download")
-async def download_data(request: Request):
+@router.get("/api/save")
+async def save_data(state: MeasurementState = Depends(get_measurement_state),):
     """Скачивание файла с данными"""
-    state = request.app.state.measurement
     try:
         if Path(state.excel_filename).exists():
             from fastapi.responses import FileResponse

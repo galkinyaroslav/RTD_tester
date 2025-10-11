@@ -4,7 +4,7 @@ import time
 import pyvisa
 
 
-logger = logging.getLogger("visa_client")
+logger = logging.getLogger(__name__)
 
 # class PT100Controller:
 #     def __init__(self):

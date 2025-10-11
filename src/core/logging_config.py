@@ -19,3 +19,6 @@ def setup_logging():
     logging.getLogger("uvicorn.error").setLevel(logging.INFO)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     logging.getLogger("pyvisa").setLevel(logging.WARNING)
+    logging.getLogger("watchfiles").setLevel(logging.WARNING)  # less 2025-10-11 21:44:46,362 [INFO] watchfiles.main: 1 change detected.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+

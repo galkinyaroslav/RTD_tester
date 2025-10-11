@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 import logging
 import uvicorn
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from starlette.datastructures import State
 
 from src.state import MeasurementState
@@ -15,11 +16,12 @@ from src.meas_control import DAQ_34970A
 from src.core.config import BASE_DIR, get_settings
 from src.core.logging_config import setup_logging
 from src.web_socket import ConnectionManager
+from fastapi.templating import Jinja2Templates
+
 
 
 # Logging setup
 setup_logging()
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,15 @@ async def lifespan(app: FastAPI):
     app.state.ws_connection_manager = ConnectionManager()
     app.state.instrument = DAQ_34970A()
     app.state.dot_env = get_settings()
+    app.state.templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
+    DATABASE_URL = (f'postgresql+asyncpg://{app.state.dot_env.DB_USER}:'
+                    f'{app.state.dot_env.DB_PASS}@'
+                    f'{app.state.dot_env.DB_HOST}:'
+                    f'{app.state.dot_env.DB_PORT}/'
+                    f'{app.state.dot_env.DB_NAME}')
+
+    app.state.engine = create_async_engine(DATABASE_URL)
+    app.state.db_sessionmaker = async_sessionmaker(app.state.engine, expire_on_commit=False)
 
     yield # APP IS WORKING!
 

@@ -56,6 +56,12 @@ body {
     gap: 10px;
 }
 
+.timer {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
 button {
     padding: 15px 25px;
     border: none;
@@ -102,6 +108,21 @@ button:disabled {
     transform: none;
     box-shadow: none;
 }
+
+.timer-input {
+    padding: 10px 15px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.timer-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
 
 .status-panel {
     display: grid;
@@ -249,3 +270,4 @@ button:disabled {
         font-size: 2em;
     }
 }
+

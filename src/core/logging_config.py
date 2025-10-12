@@ -1,5 +1,8 @@
 import logging
 import sys
+from pathlib import Path
+from src.core.config import BASE_DIR
+
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
@@ -10,7 +13,7 @@ def setup_logging():
         format=LOG_FORMAT,
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler("app.log", encoding="utf-8"),
+            logging.FileHandler(Path(BASE_DIR, "app.log"), encoding="utf-8"),
         ],
     )
 

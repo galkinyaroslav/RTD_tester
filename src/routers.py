@@ -11,8 +11,12 @@ import threading
 import json
 
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src import schemas, models
 from src.core.config import BASE_DIR
+from src.database import get_async_session
 from src.logic import measurement_loop, save_to_excel
 from src.state import MeasurementState
 from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state, \
@@ -162,4 +166,45 @@ async def save_data(state: MeasurementState = Depends(get_measurement_state),):
 
 
 
+
+
+
+# добавить Run
+@router.post("/test/runs", response_model=schemas.LastRunRead)
+async def edit_run(session: AsyncSession = Depends(get_async_session)):
+
+    stmt = (
+        update(models.LastRun)
+        .where(models.LastRun.id == 1)
+        .values(last_run=(models.LastRun.last_run + 1 ))
+        .returning(models.LastRun.id, models.LastRun.last_run)
+    )
+    result = await session.execute(stmt)
+    data = result.fetchall()[0]
+    last = models.LastRun(id=data[0],last_run=data[1])
+    await session.commit()
+    return last
+
+# получить все Run
+@router.get("/test/runs", response_model=list[schemas.LastRunRead])
+async def get_runs(session: AsyncSession = Depends(get_async_session)):
+    result = await session.execute(select(models.LastRun))
+    runs = result.scalars().all()
+    return runs
+
+# добавить измерение
+@router.post("/test/", response_model=schemas.MeasurementRead)
+async def create_measurement(meas: schemas.MeasurementCreate, session: AsyncSession = Depends(get_async_session)):
+    db_meas = models.Measurement(**meas.model_dump())
+    # db_meas.measure_datetime = datetime.now()
+    session.add(db_meas)
+    await session.commit()
+    await session.refresh(db_meas)
+    return db_meas
+
+# получить все измерения
+@router.get("/test/", response_model=list[schemas.MeasurementRead])
+async def get_measurements(session: AsyncSession = Depends(get_async_session)):
+    result = await session.execute(select(models.Measurement))
+    return result.scalars().all()
 

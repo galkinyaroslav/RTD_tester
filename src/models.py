@@ -5,31 +5,27 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.database import Base
 
 
-class Run(Base):
-    __tablename__ = "runs"
+class LastRun(Base):
+    __tablename__ = "last_run"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    run_number: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    measurements: Mapped[list["Measurement"]] = relationship(
-        back_populates="run", cascade="all, delete"
-    )
+    last_run: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class Measurement(Base):
     __tablename__ = "measurements"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    run_id: Mapped[int] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+
+    run_id: Mapped[int] = mapped_column(nullable=False)
 
     measure_datetime:  Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, default=datetime.now(UTC))
 
-    t205: Mapped[float] = mapped_column(Float)
-    t206: Mapped[float] = mapped_column(Float)
-    t207: Mapped[float] = mapped_column(Float)
-    t208: Mapped[float] = mapped_column(Float)
-    t209: Mapped[float] = mapped_column(Float)
-    t210: Mapped[float] = mapped_column(Float)
+    t205: Mapped[float] = mapped_column(Float, nullable=False)
+    t206: Mapped[float] = mapped_column(Float, nullable=False)
+    t207: Mapped[float] = mapped_column(Float, nullable=False)
+    t208: Mapped[float] = mapped_column(Float, nullable=False)
+    t209: Mapped[float] = mapped_column(Float, nullable=False)
+    t210: Mapped[float] = mapped_column(Float, nullable=False)
 
-    run: Mapped["Run"] = relationship(back_populates="measurements")
 

@@ -1,33 +1,32 @@
 # src/schemas.py
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import List, Optional
 
 class MeasurementBase(BaseModel):
-    t1: float
-    t2: float
-    t3: float
-    t4: float
-    t5: float
-    t6: float
+    t205: float
+    t206: float
+    t207: float
+    t208: float
+    t209: float
+    t210: float
 
 class MeasurementCreate(MeasurementBase):
     run_id: int
 
 class MeasurementRead(MeasurementBase):
+    run_id: int
+    # measure_datetime: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LastRunBase(BaseModel):
     id: int
-    time: datetime
-    class Config:
-        orm_mode = True
 
-class RunBase(BaseModel):
-    run_number: int
-
-class RunCreate(RunBase):
+class LastRunCreate(LastRunBase):
     pass
 
-class RunRead(RunBase):
-    id: int
-    measurements: Optional[List[MeasurementRead]] = None
-    class Config:
-        orm_mode = True
+class LastRunRead(LastRunBase):
+    last_run: int
+
+    model_config = ConfigDict(from_attributes=True)

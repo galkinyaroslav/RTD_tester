@@ -7,10 +7,12 @@ import pandas as pd
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import HTMLResponse
 from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.templating import Jinja2Templates
+
+
 import threading
 import json
 
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -170,7 +172,7 @@ async def save_data(state: MeasurementState = Depends(get_measurement_state),):
 
 
 # добавить Run
-@router.post("/test/runs", response_model=schemas.LastRunRead)
+@router.patch("/test/last_run", response_model=schemas.LastRunRead)
 async def edit_run(session: AsyncSession = Depends(get_async_session)):
 
     stmt = (
@@ -186,11 +188,22 @@ async def edit_run(session: AsyncSession = Depends(get_async_session)):
     return last
 
 # получить все Run
-@router.get("/test/runs", response_model=list[schemas.LastRunRead])
+@router.get("/test/last_run", response_model=list[schemas.LastRunRead])
 async def get_runs(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(models.LastRun))
     runs = result.scalars().all()
     return runs
+
+# add new row in LastRun -- raise error ("Only update id=1 is available!")
+@router.post("/test/last_run", response_model=schemas.LastRunRead)
+async def create_measurement(last_run: schemas.LastRunCreate, session: AsyncSession = Depends(get_async_session)):
+    db_meas = models.LastRun(**last_run.model_dump())
+    # db_meas.measure_datetime = datetime.now()
+    session.add(db_meas)
+    await session.commit()
+    await session.refresh(db_meas)
+    return db_meas
+
 
 # добавить измерение
 @router.post("/test/", response_model=schemas.MeasurementRead)

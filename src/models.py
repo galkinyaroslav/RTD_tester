@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from sqlalchemy import Integer, Float, ForeignKey, TIMESTAMP
+from sqlalchemy import Integer, Float, ForeignKey, TIMESTAMP, event
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.database import Base
 
@@ -11,6 +11,9 @@ class LastRun(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     last_run: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+@event.listens_for(LastRun, 'before_insert')
+def prevent_inserts(mapper, connection, target):
+    raise Exception("Only update id=1 is available!")
 
 class Measurement(Base):
     __tablename__ = "measurements"

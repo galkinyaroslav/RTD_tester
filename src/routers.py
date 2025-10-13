@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import sqlalchemy
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import HTMLResponse
 from fastapi import WebSocket, WebSocketDisconnect
@@ -195,14 +196,18 @@ async def get_runs(session: AsyncSession = Depends(get_async_session)):
     return runs
 
 # add new row in LastRun -- raise error ("Only update id=1 is available!")
-@router.post("/test/last_run", response_model=schemas.LastRunRead)
+@router.post("/test/last_run", )
 async def create_measurement(last_run: schemas.LastRunCreate, session: AsyncSession = Depends(get_async_session)):
     db_meas = models.LastRun(**last_run.model_dump())
     # db_meas.measure_datetime = datetime.now()
-    session.add(db_meas)
-    await session.commit()
-    await session.refresh(db_meas)
-    return db_meas
+    try:
+        session.add(db_meas)
+        await session.commit()
+        await session.refresh(db_meas)
+    except sqlalchemy.exc.DBAPIError:
+        logger.error("Only UPDATE id=1 is available!")
+
+    return {'error': 'Only UPDATE id=1 is available!'}
 
 
 # добавить измерение

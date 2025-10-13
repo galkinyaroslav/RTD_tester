@@ -1,19 +1,23 @@
+import logging
 from datetime import datetime, UTC
 
 from sqlalchemy import Integer, Float, ForeignKey, TIMESTAMP, event
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.database import Base
 
+logger = logging.getLogger(__name__)
 
 class LastRun(Base):
     __tablename__ = "last_run"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, default=1)
     last_run: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-@event.listens_for(LastRun, 'before_insert')
-def prevent_inserts(mapper, connection, target):
-    raise Exception("Only update id=1 is available!")
+# @event.listens_for(LastRun, 'before_insert')
+# def prevent_inserts(mapper, connection, target):
+#
+#     logger.error("Only update id=1 is available!")
+#     # raise Exception("Only update id=1 is available!")
 
 class Measurement(Base):
     __tablename__ = "measurements"

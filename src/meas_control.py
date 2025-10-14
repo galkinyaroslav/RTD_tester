@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import time
+import traceback
+from traceback import TracebackException
 
 import pyvisa
 
@@ -9,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 class DAQ_34970A():
     def __init__(self, channels: list = None):
-        self.channels = channels if not channels else ['205','206','207','208','209','210',]
+        self.channels = channels if channels else ['205','206','207','208','209','210',]
         self.__device_name = '34970A'
         self.rm = None
         self.instrument = None
         self.connected = False
         self.visa_address: str = ''
-
+        self.is_configured =False
     # def make_channels_str(self, channels: list)-> str:
     #     return '(@'+','.join(channels)+')'
 
@@ -67,23 +69,25 @@ class DAQ_34970A():
     def configure_sync(self):
         try:
             # Reset instrument with delay!!!
+
             self.instrument.write('*RST')
             time.sleep(1)
-
             self.instrument.write('*CLS')
             self.instrument.write_termination = '\r\n'
             self.instrument.read_termination = '\r\n'
+            str_channels=','.join(self.channels)
+            self.instrument.write(f'CONF:TEMP FRTD, 85, (@{str_channels})')
+            self.instrument.write(f'TEMP:TRAN:FRTD:RES:REF 100, (@{str_channels})')
+            self.instrument.write(f'TEMP:TRAN:FRTD:TYPE 85, (@{str_channels})')
 
-            self.instrument.write(f'CONF:TEMP FRTD, 85, (@{','.join(self.channels)})')
-            self.instrument.write(f'TEMP:TRAN:FRTD:RES:REF 100, (@{','.join(self.channels)})')
-            self.instrument.write(f'TEMP:TRAN:FRTD:TYPE 85, (@{','.join(self.channels)})')
+            self.instrument.write(f'ROUT:SCAN (@{str_channels})')
 
-            self.instrument.write(f'ROUT:SCAN (@{','.join(self.channels)})')
+            self.is_configured = True
 
             logger.info(f"Channels: {self.channels} are configured")
             return True
         except Exception as e:
-            logger.error(f"Configuration error : {e}")
+            logger.error(f"Configuration error : {traceback.format_exc()}")
             return False
 
     async def configure(self):
@@ -96,7 +100,7 @@ class DAQ_34970A():
         return dict(zip(self.channels,[float(i) for i in raw_data.split(',')]))
 
     async def read_data(self):
-        await asyncio.to_thread(self.read_data_sync)
+        return await asyncio.to_thread(self.read_data_sync)
 
 if __name__ == '__main__':
 

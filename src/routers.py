@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from datetime import datetime
@@ -10,7 +11,6 @@ from fastapi.responses import HTMLResponse
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.templating import Jinja2Templates
 
-
 import threading
 import json
 
@@ -20,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src import schemas, models
 from src.core.config import BASE_DIR
 from src.database import get_async_session
-from src.logic import measurement_loop, save_to_excel
 from src.state import MeasurementState
 from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state, \
     get_templates_state
@@ -50,7 +49,8 @@ async def read_root(request: Request,
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket,
-                             manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
+                             manager: ConnectionManager = Depends(get_ws_connection_manager_state)
+                             ):
     await manager.connect(websocket)
     try:
         while True:
@@ -61,132 +61,20 @@ async def websocket_endpoint(websocket: WebSocket,
         manager.disconnect(websocket)
 
 
-@router.get("/api/data")
-async def get_data(state: MeasurementState = Depends(get_measurement_state)):
-    return state.current_data
-
-
-@router.post("/api/start")
-async def start_measurement(state: MeasurementState = Depends(get_measurement_state),
-                            pt100_controller: DAQ_34970A = Depends(get_instrument_state),
-                            manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
-
-    if not state.is_measuring:
-        if pt100_controller.connect():
-            if pt100_controller.configure():
-                state.is_measuring = True
-                measurement_thread = threading.Thread(target=measurement_loop, args=(state, pt100_controller, manager))
-                measurement_thread.daemon = True
-                measurement_thread.start()
-
-                await manager.broadcast(json.dumps({
-                    'type': 'status',
-                    'measuring': True,
-                    'recording': state.is_recording
-                }))
-
-                return {"status": "started", "message": "Измерения запущены"}
-
-        return {"status": "error", "message": "Не удалось подключиться к прибору"}
-    return {"status": "already_running", "message": "Измерения уже запущены"}
-
-
-@router.post("/api/stop")
-async def stop_measurement(pt100_controller: DAQ_34970A = Depends(get_instrument_state),
-                           state: MeasurementState = Depends(get_measurement_state),
-                           manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
-
-    state.is_measuring = False
-    state.is_recording = False
-    pt100_controller.disconnect()
-
-    await manager.broadcast(json.dumps({
-        'type': 'status',
-        'measuring': False,
-        'recording': False
-    }))
-
-    return {"status": "stopped", "message": "Измерения остановлены"}
-
-
-@router.post("/api/record/start")
-async def start_recording(state: MeasurementState = Depends(get_measurement_state),
-                          manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
-
-    if state.is_measuring:
-        state.is_recording = True
-
-        await manager.broadcast(json.dumps({
-            'type': 'status',
-            'measuring': True,
-            'recording': True
-        }))
-
-        return {"status": "recording_started", "message": "Запись данных начата"}
-    else:
-        return {"status": "error", "message": "Сначала запустите измерения"}
-
-
-@router.post("/api/record/stop")
-async def stop_recording(state: MeasurementState = Depends(get_measurement_state),
-                         manager: ConnectionManager = Depends(get_ws_connection_manager_state)):
-    state.is_recording = False
-    save_to_excel()
-    await manager.broadcast(json.dumps({
-        'type': 'status',
-        'measuring': state.is_measuring,
-        'recording': False
-    }))
-
-    return {"status": "recording_stopped", "message": "Запись данных остановлена"}
-
-
-@router.get("/api/status")
-async def get_status(state: MeasurementState = Depends(get_measurement_state),
-                     pt100_controller: DAQ_34970A = Depends(get_instrument_state),):
-    return {
-        "measuring": state.is_measuring,
-        "recording": state.is_recording,
-        "connected": pt100_controller.connected
-    }
-
-
-@router.get("/api/save")
-async def save_data(state: MeasurementState = Depends(get_measurement_state),):
-    """Скачивание файла с данными"""
-    try:
-        if Path(state.excel_filename).exists():
-            from fastapi.responses import FileResponse
-            return FileResponse(
-                state.excel_filename,
-                media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                filename=f"pt100_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-            )
-        else:
-            return {"status": "error", "message": "Файл данных не найден"}
-    except Exception as e:
-        return {"status": "error", "message": f"Ошибка при скачивании: {str(e)}"}
-
-
-
-
-
-
-# добавить Run
 @router.patch("/test/last_run", response_model=schemas.LastRunRead)
 async def edit_run(session: AsyncSession = Depends(get_async_session)):
-
     stmt = (
         update(models.LastRun)
         .where(models.LastRun.id == 1)
-        .values(last_run=(models.LastRun.last_run + 1 ))
+        .values(last_run=(models.LastRun.last_run + 1))
         .returning(models.LastRun.id, models.LastRun.last_run)
     )
     result = await session.execute(stmt)
     data = result.fetchall()[0]
-    last = models.LastRun(id=data[0],last_run=data[1])
+    last = models.LastRun(id=data[0], last_run=data[1])
     await session.commit()
     return last
+
 
 # получить все Run
 @router.get("/test/last_run", response_model=list[schemas.LastRunRead])
@@ -194,6 +82,7 @@ async def get_runs(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(models.LastRun))
     runs = result.scalars().all()
     return runs
+
 
 # add new row in LastRun -- raise error ("Only update id=1 is available!")
 @router.post("/test/last_run", )
@@ -220,9 +109,116 @@ async def create_measurement(meas: schemas.MeasurementCreate, session: AsyncSess
     await session.refresh(db_meas)
     return db_meas
 
+
 # получить все измерения
 @router.get("/test/", response_model=list[schemas.MeasurementRead])
 async def get_measurements(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(models.Measurement))
     return result.scalars().all()
 
+
+@router.post("/api/start")
+async def start_measurement(session: AsyncSession = Depends(get_async_session),
+                            state=Depends(get_measurement_state),
+                            instrument: DAQ_34970A = Depends(get_instrument_state),
+                            manager: ConnectionManager = Depends(get_ws_connection_manager_state)
+                            ):
+    if state.is_measuring:
+        return {"status": "already_running"}
+
+    # получаем last_run из БД
+    result = await session.execute(select(models.LastRun).limit(1))
+    last_run = result.scalar_one_or_none()
+    if not last_run:
+        last_run = models.LastRun(id=1, last_run=0)
+        session.add(last_run)
+
+    # увеличиваем значение
+    last_run.last_run += 1
+    state.current_run_number = last_run.last_run
+    await session.commit()
+    if not state.is_configured:
+        await instrument.configure()
+        state.is_configured = True
+
+    state.is_measuring = True
+
+    # поток измерений
+    async def measurement_loop():
+        try:
+            while state.is_measuring:
+                # читаем данные с прибора
+                t_values = await instrument.read_data()  # например, [t1, t2, t3, ...]
+                # сохраняем в БД
+                new_record = models.Measurement(
+                    run_id=state.current_run_number,
+                    t205=t_values['205'],
+                    t206=t_values['206'],
+                    t207=t_values['207'],
+                    t208=t_values['208'],
+                    t209=t_values['209'],
+                    t210=t_values['210']
+                )
+                session.add(new_record)  # sync_session — если ты используешь async engine
+                await session.commit()
+
+                # отправка по WebSocket
+                await manager.broadcast(message={'data': t_values,})
+                await asyncio.sleep(state.timer_seconds)
+        except asyncio.CancelledError:
+            logger.error("Measurement loop cancelled")
+        finally:
+            state.is_measuring = False
+            state.measurement_task = None
+            logger.info("✅ Measurement loop stopped")
+
+    task = asyncio.create_task(measurement_loop())
+    state.measurement_task = task
+    return {"status": "started", "run_number": state.current_run_number}
+
+
+@router.post("/api/stop")
+async def stop_measurement(state=Depends(get_measurement_state)):
+    if not state.is_measuring:
+        return {"status": "not_running"}
+
+    state.is_measuring = False
+
+    # корректно останавливаем задачу
+    if state.measurement_task and not state.measurement_task.done():
+        state.measurement_task.cancel()
+        try:
+            await state.measurement_task
+        except asyncio.CancelledError:
+            pass
+
+    return {"status": "stopped"}
+
+
+@router.post("/api/state/timer")
+async def set_timer(state=Depends(get_measurement_state), payload: dict = None):
+    timer = payload.get("timer", 5)
+    state.timer_seconds = int(timer)
+    return {"timer": state.timer_seconds}
+
+
+@router.post("/api/configure")
+async def configure_device(state=Depends(get_measurement_state),
+                           instrument: DAQ_34970A = Depends(get_instrument_state), ):
+    """Асинхронная конфигурация прибора"""
+    if state.is_configured:
+        return {"status": "already_configured"}
+
+    try:
+        await instrument.configure()
+        if instrument.is_configured:
+            state.is_configured = True
+            return {"status": "configured"}
+
+        else:
+            state.is_configured = False
+            return {"status": "NOT configured"}
+
+    except Exception as e:
+        state.is_configured = False
+        return {"status": "error", "detail": str(e)}

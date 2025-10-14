@@ -1,3 +1,5 @@
+import json
+
 from fastapi import WebSocket
 
 
@@ -13,11 +15,11 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: json):
         disconnected_connections = []
         for connection in self.active_connections:
             try:
-                await connection.send_text(message)
+                await connection.send_json(message)
             except Exception:
                 disconnected_connections.append(connection)
 

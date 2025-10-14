@@ -204,17 +204,17 @@ button:disabled {
     margin: 10px 0;
 }
 
-.resistance {
-    font-size: 1.1em;
-    color: #666;
-    margin: 5px 0;
-}
+/*.resistance {*/
+/*    font-size: 1.1em;*/
+/*    color: #666;*/
+/*    margin: 5px 0;*/
+/*}*/
 
-.timestamp {
-    font-size: 0.9em;
-    color: #999;
-    margin-top: 15px;
-}
+/*.timestamp {*/
+/*    font-size: 0.9em;*/
+/*    color: #999;*/
+/*    margin-top: 15px;*/
+/*}*/
 
 .chart-container {
     background: white;
@@ -246,12 +246,12 @@ button:disabled {
     z-index: 1000;
 }
 
-.connected {
+.connection-status.connected {
     background: var(--success-color);
     color: white;
 }
 
-.disconnected {
+.connection-status.disconnected {
     background: var(--danger-color);
     color: white;
 }

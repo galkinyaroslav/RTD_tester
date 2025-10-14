@@ -1,4 +1,5 @@
 ALTER TABLE last_run ADD CONSTRAINT one_row CHECK (id = 1);
+
 CREATE OR REPLACE FUNCTION limit_one_row()
 RETURNS trigger AS $$
 BEGIN
@@ -7,7 +8,9 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
+
 $$ LANGUAGE plpgsql;
+
 CREATE TRIGGER last_run_limit_insert
 BEFORE INSERT ON last_run
 FOR EACH ROW EXECUTE FUNCTION limit_one_row();

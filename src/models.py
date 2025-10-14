@@ -26,7 +26,7 @@ class Measurement(Base):
 
     run_id: Mapped[int] = mapped_column(nullable=False)
 
-    measure_datetime:  Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, default=datetime.now(UTC))
+    measure_datetime:  Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, default=datetime.now())
 
     t205: Mapped[float] = mapped_column(Float, nullable=False)
     t206: Mapped[float] = mapped_column(Float, nullable=False)

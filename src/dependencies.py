@@ -1,5 +1,7 @@
 # src/dependencies/common.py
 from fastapi import Request
+from starlette.websockets import WebSocket
+
 
 def get_measurement_state(request: Request):
     """
@@ -7,11 +9,11 @@ def get_measurement_state(request: Request):
     """
     return request.app.state.measurement
 
-def get_ws_connection_manager_state(request: Request):
+def get_ws_connection_manager_state(ws: WebSocket):
     """
     Dependency, return ConnectionManager from app.state
     """
-    return request.app.state.ws_connection_manager
+    return ws.app.state.ws_connection_manager
 
 def get_instrument_state(request: Request):
     """

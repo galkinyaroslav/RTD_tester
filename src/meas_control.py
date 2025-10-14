@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 
@@ -5,78 +6,6 @@ import pyvisa
 
 
 logger = logging.getLogger(__name__)
-
-# class PT100Controller:
-#     def __init__(self):
-#         self.rm = None
-#         self.instrument = None
-#         self.connected = False
-#
-#     def connect(self, visa_address="GPIB0::22::INSTR"):
-#         """Подключение к Agilent 34970"""
-#         try:
-#             self.rm = pyvisa.ResourceManager()
-#             self.instrument = self.rm.open_resource(visa_address)
-#             self.instrument.timeout = 10000
-#             self.connected = True
-#             logger.info(f"Успешно подключено к {visa_address}")
-#             return True
-#         except Exception as e:
-#             logger.error(f"Ошибка подключения: {e}")
-#             return False
-#
-#     def disconnect(self):
-#         """Отключение от прибора"""
-#         if self.instrument:
-#             self.instrument.close()
-#         if self.rm:
-#             self.rm.close()
-#         self.connected = False
-#         logger.info("Отключено от прибора")
-#
-#     def configure_measurement(self, channels=["101", "102", "103"]):
-#         """Настройка измерения температуры PT100"""
-#         try:
-#             # Сброс прибора
-#             self.instrument.write("*RST")
-#             time.sleep(1)
-#
-#             # Настройка для PT100 (4-проводное подключение)
-#             for channel in channels:
-#                 # FRES - 4-проводное измерение сопротивления
-#                 self.instrument.write(f"CONF:FRES {channel}")
-#                 # Диапазон 100 Ом для PT100
-#                 self.instrument.write(f"FRES:RANGE 100, {channel}")
-#                 # Разрешение 0.001 Ом
-#                 self.instrument.write(f"FRES:RES 0.001, {channel}")
-#                 # NPLC = 1
-#                 self.instrument.write(f"FRES:NPLC 1, {channel}")
-#
-#             logger.info(f"Настроены каналы: {channels}")
-#             return True
-#         except Exception as e:
-#             logger.error(f"Ошибка настройки: {e}")
-#             return False
-#
-#     def read_temperature(self, channels=["101", "102", "103"]):
-#         """Чтение температуры с каналов"""
-#         try:
-#             measurements = {}
-#             for channel in channels:
-#                 # Чтение сопротивления
-#                 resistance = float(self.instrument.query(f"READ? {channel}"))
-#                 # Конвертация сопротивления в температуру
-#                 temperature = self.resistance_to_temperature(resistance)
-#                 measurements[channel] = {
-#                     'resistance': round(resistance, 4),
-#                     'temperature': temperature,
-#                     'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#                 }
-#             return measurements
-#         except Exception as e:
-#             logger.error(f"Ошибка чтения: {e}")
-#             return None
-
 
 class DAQ_34970A():
     def __init__(self, channels: list = None):
@@ -87,10 +16,10 @@ class DAQ_34970A():
         self.connected = False
         self.visa_address: str = ''
 
-    def make_channels_str(self, channels: list)-> str:
-        return '(@'+','.join(channels)+')'
+    # def make_channels_str(self, channels: list)-> str:
+    #     return '(@'+','.join(channels)+')'
 
-    def connect(self) -> bool | None:
+    def connect_sync(self) -> bool | None:
         self.rm = pyvisa.ResourceManager()  # '/usr/lib/x86_64-linux-gnu/libiovisa.so'
         list_devices = self.rm.list_resources()
         # print(list_devices)
@@ -117,8 +46,13 @@ class DAQ_34970A():
                 return False
         return None
 
-    def disconnect(self):
-        """Отключение от прибора"""
+
+    async def connect(self):
+        """Async interface connect_sync."""
+        await asyncio.to_thread(self.connect_sync)
+
+    def disconnect_sync(self):
+        """Disconnection from instrument"""
         if self.instrument:
             self.instrument.close()
         if self.rm:
@@ -126,7 +60,11 @@ class DAQ_34970A():
         self.connected = False
         logger.info(f"Disconnected from {self.visa_address} ")
 
-    def configure(self):
+    async def disconnect(self):
+        await asyncio.to_thread(self.disconnect_sync)
+
+
+    def configure_sync(self):
         try:
             # Reset instrument with delay!!!
             self.instrument.write('*RST')
@@ -148,10 +86,17 @@ class DAQ_34970A():
             logger.error(f"Configuration error : {e}")
             return False
 
-    def read_data(self) -> dict:
+    async def configure(self):
+        """Async interface configure_sync."""
+        await asyncio.to_thread(self.configure_sync)
+
+    def read_data_sync(self) -> dict:
         self.instrument.write(f'INIT')
         raw_data = self.instrument.query(f'FETC?')
         return dict(zip(self.channels,[float(i) for i in raw_data.split(',')]))
+
+    async def read_data(self):
+        await asyncio.to_thread(self.read_data_sync)
 
 if __name__ == '__main__':
 

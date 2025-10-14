@@ -32,24 +32,25 @@ async def lifespan(app: FastAPI):
     app.state.measurement = MeasurementState()
     app.state.ws_connection_manager = ConnectionManager()
     app.state.instrument = DAQ_34970A()
+    await app.state.instrument.connect()
     app.state.dot_env = get_settings()
     app.state.templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
-    DATABASE_URL = (f'postgresql+asyncpg://{app.state.dot_env.DB_USER}:'
-                    f'{app.state.dot_env.DB_PASS}@'
-                    f'{app.state.dot_env.DB_HOST}:'
-                    f'{app.state.dot_env.DB_PORT}/'
-                    f'{app.state.dot_env.DB_NAME}')
+    # DATABASE_URL = (f'postgresql+asyncpg://{app.state.dot_env.DB_USER}:'
+    #                 f'{app.state.dot_env.DB_PASS}@'
+    #                 f'{app.state.dot_env.DB_HOST}:'
+    #                 f'{app.state.dot_env.DB_PORT}/'
+    #                 f'{app.state.dot_env.DB_NAME}')
 
-    app.state.engine = create_async_engine(DATABASE_URL)
+    app.state.engine = create_async_engine(app.state.dot_env.DB_URL)
     app.state.db_sessionmaker = async_sessionmaker(app.state.engine, expire_on_commit=False)
 
     yield # APP IS WORKING!
 
     # Shutdown
     app.state.measurement.is_measuring = False
-    app.state.measurement.is_recording = False
+    # app.state.measurement.is_recording = False
     if app.state.instrument.connected:
-        app.state.instrument.disconnect()
+        await app.state.instrument.disconnect()
     # app.state.instrument.close()
     logger.info("Stop apt PT100 Monitor")
 

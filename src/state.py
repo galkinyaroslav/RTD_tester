@@ -1,11 +1,17 @@
 class MeasurementState:
     def __init__(self):
         self.is_measuring = False
-        self.is_recording = False
-        self.current_data = {}
+        self.timer_seconds = 5
+        self.current_run_number = 0
         self.measurement_thread = None
+        # self.is_recording = False
+        self.current_data = {}
         self.data_buffer = []
         self.excel_filename = "pt100_measurements.xlsx"
+        self.timer_seconds = 5
+        self.current_run_number = 0
+        self.measurement_thread = None
+
 
 
     def add_measurement(self, data):

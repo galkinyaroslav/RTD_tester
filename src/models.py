@@ -27,12 +27,18 @@ class Measurement(Base):
     run_id: Mapped[int] = mapped_column(nullable=False)
 
     measure_datetime:  Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, default=datetime.now())
+    t201: Mapped[float] = mapped_column(Float, nullable=True)
+    t202: Mapped[float] = mapped_column(Float, nullable=True)
+    t203: Mapped[float] = mapped_column(Float, nullable=True)
 
-    t205: Mapped[float] = mapped_column(Float, nullable=False)
-    t206: Mapped[float] = mapped_column(Float, nullable=False)
-    t207: Mapped[float] = mapped_column(Float, nullable=False)
-    t208: Mapped[float] = mapped_column(Float, nullable=False)
-    t209: Mapped[float] = mapped_column(Float, nullable=False)
-    t210: Mapped[float] = mapped_column(Float, nullable=False)
+    t204: Mapped[float] = mapped_column(Float, nullable=True)
+    t205: Mapped[float] = mapped_column(Float, nullable=True)
+
+    t206: Mapped[float] = mapped_column(Float, nullable=True)
+
+    t207: Mapped[float] = mapped_column(Float, nullable=True)
+    t208: Mapped[float] = mapped_column(Float, nullable=True)
+    t209: Mapped[float] = mapped_column(Float, nullable=True)
+    t210: Mapped[float] = mapped_column(Float, nullable=True)
 
 

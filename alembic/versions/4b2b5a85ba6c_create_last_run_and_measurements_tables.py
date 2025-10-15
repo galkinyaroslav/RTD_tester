@@ -58,12 +58,19 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('run_id', sa.Integer(), nullable=False),
     sa.Column('measure_datetime', sa.TIMESTAMP(), nullable=False),
-    sa.Column('t205', sa.Float(), nullable=False),
-    sa.Column('t206', sa.Float(), nullable=False),
-    sa.Column('t207', sa.Float(), nullable=False),
-    sa.Column('t208', sa.Float(), nullable=False),
-    sa.Column('t209', sa.Float(), nullable=False),
-    sa.Column('t210', sa.Float(), nullable=False),
+    sa.Column('t201', sa.Float(), nullable=True),
+    sa.Column('t202', sa.Float(), nullable=True),
+    sa.Column('t203', sa.Float(), nullable=True),
+    sa.Column('t204', sa.Float(), nullable=True),
+
+    sa.Column('t205', sa.Float(), nullable=True),
+
+    sa.Column('t206', sa.Float(), nullable=True),
+
+    sa.Column('t207', sa.Float(), nullable=True),
+    sa.Column('t208', sa.Float(), nullable=True),
+    sa.Column('t209', sa.Float(), nullable=True),
+    sa.Column('t210', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_measurements_id'), 'measurements', ['id'], unique=False)

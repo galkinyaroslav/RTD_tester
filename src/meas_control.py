@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class DAQ_34970A():
     def __init__(self, channels: list = None):
-        self.channels = channels if channels else ['205','206','207','208','209','210',]
+        self.channels = channels if channels else ['204','205','207','208','209','210',]
         self.__device_name = '34970A'
         self.rm = None
         self.instrument = None
@@ -72,6 +72,7 @@ class DAQ_34970A():
 
             self.instrument.write('*RST')
             time.sleep(1)
+            self.instrument.timeout=10000 # MUST HAVE for long readings!! in ms
             self.instrument.write('*CLS')
             self.instrument.write_termination = '\r\n'
             self.instrument.read_termination = '\r\n'
@@ -79,7 +80,7 @@ class DAQ_34970A():
             self.instrument.write(f'CONF:TEMP FRTD, 85, (@{str_channels})')
             self.instrument.write(f'TEMP:TRAN:FRTD:RES:REF 100, (@{str_channels})')
             self.instrument.write(f'TEMP:TRAN:FRTD:TYPE 85, (@{str_channels})')
-
+            self.instrument.write(f'ROUT:CHAN:DELAY 0.2,(@{str_channels})')
             self.instrument.write(f'ROUT:SCAN (@{str_channels})')
 
             self.is_configured = True

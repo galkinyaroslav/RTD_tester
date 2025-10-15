@@ -150,14 +150,12 @@ async def start_measurement(session: AsyncSession = Depends(get_async_session),
                 # читаем данные с прибора
                 t_values = await instrument.read_data()  # например, [t1, t2, t3, ...]
                 # сохраняем в БД
+                record_t = {}
+                for t in t_values.keys():
+                    record_t[f't{t}'] = t_values.get(t)
                 new_record = models.Measurement(
                     run_id=state.current_run_number,
-                    t205=t_values['205'],
-                    t206=t_values['206'],
-                    t207=t_values['207'],
-                    t208=t_values['208'],
-                    t209=t_values['209'],
-                    t210=t_values['210']
+                    **record_t
                 )
                 session.add(new_record)  # sync_session — если ты используешь async engine
                 await session.commit()

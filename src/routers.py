@@ -133,7 +133,7 @@ async def start_measurement(session: AsyncSession = Depends(get_async_session),
         last_run = models.LastRun(id=1, last_run=0)
         session.add(last_run)
 
-    # увеличиваем значение
+    # increment
     last_run.last_run += 1
     state.current_run_number = last_run.last_run
     await session.commit()
@@ -148,7 +148,7 @@ async def start_measurement(session: AsyncSession = Depends(get_async_session),
         try:
             while state.is_measuring:
                 # читаем данные с прибора
-                t_values = await instrument.read_data()  # например, [t1, t2, t3, ...]
+                t_values = await instrument.read_data()  # например, [t201, t202, ...]
                 # сохраняем в БД
                 record_t = {}
                 for t in t_values.keys():

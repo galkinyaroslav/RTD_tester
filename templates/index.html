@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг PT100 - Agilent 34970</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
 <!--    <link rel="stylesheet" href="../static/styles.css">-->
     <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+
 </head>
 <body>
     <div class="connection-status disconnected" id="connectionStatus">
@@ -75,22 +77,22 @@
                 <h3>Канал 206</h3>
                 <div class="temperature" id="t206">-- °C</div>
             </div>
-            <div class="data-card">
-                <h3>Канал 207</h3>
-                <div class="temperature" id="t207">-- °C</div>
-            </div>
-            <div class="data-card">
-                <h3>Канал 208</h3>
-                <div class="temperature" id="t208">-- °C</div>
-            </div>
-            <div class="data-card">
-                <h3>Канал 209</h3>
-                <div class="temperature" id="t209">-- °C</div>
-            </div>
-            <div class="data-card">
-                <h3>Канал 210</h3>
-                <div class="temperature" id="t210">-- °C</div>
-            </div>
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 207</h3>-->
+<!--                <div class="temperature" id="t207">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 208</h3>-->
+<!--                <div class="temperature" id="t208">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 209</h3>-->
+<!--                <div class="temperature" id="t209">&#45;&#45; °C</div>-->
+<!--            </div>-->
+<!--            <div class="data-card">-->
+<!--                <h3>Канал 210</h3>-->
+<!--                <div class="temperature" id="t210">&#45;&#45; °C</div>-->
+<!--            </div>-->
         </div>
 
         <div class="chart-container">
@@ -98,7 +100,8 @@
             <canvas id="temperatureChart"></canvas>
         </div>
     </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@^2"></script>
     <script src="/static/js/script.js"></script>
 </body>
 </html>

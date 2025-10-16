@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 from fastapi import Request
 
+# from src.core.config import get_settings
+
+
 # DATABASE_URL = f'postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 
 
@@ -10,7 +13,7 @@ class Base(DeclarativeBase):
     __table_args__ = {'extend_existing': True}
 
 
-# engine = create_async_engine(DATABASE_URL)
+# engine = create_async_engine(get_settings().DB_URL)
 # db_sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
 
 

@@ -14,15 +14,16 @@ from fastapi.templating import Jinja2Templates
 import threading
 import json
 
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from urllib3 import request
+
+from src.core.config import Settings
+from sqlalchemy import select
 
 from src import schemas, models
 from src.core.config import BASE_DIR
-from src.database import get_async_session
 from src.state import MeasurementState
 from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state, \
-    get_templates_state
+    get_templates_state, get_dot_env_state, get_TEMP_DATA_state
 from src.meas_control import DAQ_34970A
 from src.web_socket import ConnectionManager
 
@@ -61,85 +62,89 @@ async def websocket_endpoint(websocket: WebSocket,
         manager.disconnect(websocket)
 
 
-@router.patch("/test/last_run", response_model=schemas.LastRunRead)
-async def edit_run(session: AsyncSession = Depends(get_async_session)):
-    stmt = (
-        update(models.LastRun)
-        .where(models.LastRun.id == 1)
-        .values(last_run=(models.LastRun.last_run + 1))
-        .returning(models.LastRun.id, models.LastRun.last_run)
-    )
-    result = await session.execute(stmt)
-    data = result.fetchall()[0]
-    last = models.LastRun(id=data[0], last_run=data[1])
-    await session.commit()
-    return last
-
-
-# получить все Run
-@router.get("/test/last_run", response_model=list[schemas.LastRunRead])
-async def get_runs(session: AsyncSession = Depends(get_async_session)):
-    result = await session.execute(select(models.LastRun))
-    runs = result.scalars().all()
-    return runs
-
-
-# add new row in LastRun -- raise error ("Only update id=1 is available!")
-@router.post("/test/last_run", )
-async def create_measurement(last_run: schemas.LastRunCreate, session: AsyncSession = Depends(get_async_session)):
-    db_meas = models.LastRun(**last_run.model_dump())
-    # db_meas.measure_datetime = datetime.now()
-    try:
-        session.add(db_meas)
-        await session.commit()
-        await session.refresh(db_meas)
-    except sqlalchemy.exc.DBAPIError:
-        logger.error("Only UPDATE id=1 is available!")
-
-    return {'error': 'Only UPDATE id=1 is available!'}
-
-
-# добавить измерение
-@router.post("/test/", response_model=schemas.MeasurementRead)
-async def create_measurement(meas: schemas.MeasurementCreate, session: AsyncSession = Depends(get_async_session)):
-    db_meas = models.Measurement(**meas.model_dump())
-    # db_meas.measure_datetime = datetime.now()
-    session.add(db_meas)
-    await session.commit()
-    await session.refresh(db_meas)
-    return db_meas
-
-
-# получить все измерения
-@router.get("/test/", response_model=list[schemas.MeasurementRead])
-async def get_measurements(session: AsyncSession = Depends(get_async_session)):
-    result = await session.execute(select(models.Measurement))
-    return result.scalars().all()
+# @router.patch("/test/last_run", response_model=schemas.LastRunRead)
+# async def edit_run(session: AsyncSession = Depends(get_async_session)):
+#     stmt = (
+#         update(models.LastRun)
+#         .where(models.LastRun.id == 1)
+#         .values(last_run=(models.LastRun.last_run + 1))
+#         .returning(models.LastRun.id, models.LastRun.last_run)
+#     )
+#     result = await session.execute(stmt)
+#     data = result.fetchall()[0]
+#     last = models.LastRun(id=data[0], last_run=data[1])
+#     await session.commit()
+#     return last
+#
+#
+# # получить все Run
+# @router.get("/test/last_run", response_model=list[schemas.LastRunRead])
+# async def get_runs(session: AsyncSession = Depends(get_async_session)):
+#     result = await session.execute(select(models.LastRun))
+#     runs = result.scalars().all()
+#     return runs
+#
+#
+# # add new row in LastRun -- raise error ("Only update id=1 is available!")
+# @router.post("/test/last_run", )
+# async def create_measurement(last_run: schemas.LastRunCreate, session: AsyncSession = Depends(get_async_session)):
+#     db_meas = models.LastRun(**last_run.model_dump())
+#     # db_meas.measure_datetime = datetime.now()
+#     try:
+#         session.add(db_meas)
+#         await session.commit()
+#         await session.refresh(db_meas)
+#     except sqlalchemy.exc.DBAPIError:
+#         logger.error("Only UPDATE id=1 is available!")
+#
+#     return {'error': 'Only UPDATE id=1 is available!'}
+#
+#
+# # добавить измерение
+# @router.post("/test/", response_model=schemas.MeasurementRead)
+# async def create_measurement(meas: schemas.MeasurementCreate, session: AsyncSession = Depends(get_async_session)):
+#     db_meas = models.Measurement(**meas.model_dump())
+#     # db_meas.measure_datetime = datetime.now()
+#     session.add(db_meas)
+#     await session.commit()
+#     await session.refresh(db_meas)
+#     return db_meas
+#
+#
+# # получить все измерения
+# @router.get("/test/", response_model=list[schemas.MeasurementRead])
+# async def get_measurements(session: AsyncSession = Depends(get_async_session)):
+#     result = await session.execute(select(models.Measurement))
+#     return result.scalars().all()
 
 
 @router.post("/api/start")
-async def start_measurement(session: AsyncSession = Depends(get_async_session),
+async def start_measurement(request: Request,
+                            dot_env: Settings = Depends(get_dot_env_state),
                             state=Depends(get_measurement_state),
                             instrument: DAQ_34970A = Depends(get_instrument_state),
-                            manager: ConnectionManager = Depends(get_ws_connection_manager_state)
+                            manager: ConnectionManager = Depends(get_ws_connection_manager_state),
+                            TEMP_DATA: dict = Depends(get_TEMP_DATA_state)
+
                             ):
     if state.is_measuring:
         return {"status": "already_running"}
+    async with request.app.state.db_sessionmaker() as session: # FOR SEVERAL sessions(front tasks, threads) in endpoint
+        # получаем last_run из БД
+        result = await session.execute(select(models.LastRun).limit(1))
+        last_run = result.scalar_one_or_none()
+        if not last_run:
+            last_run = models.LastRun(id=1, last_run=0)
+            session.add(last_run)
+        # increment
+        last_run.last_run += 1
+        state.current_run_number = last_run.last_run
+        await session.commit()
 
-    # получаем last_run из БД
-    result = await session.execute(select(models.LastRun).limit(1))
-    last_run = result.scalar_one_or_none()
-    if not last_run:
-        last_run = models.LastRun(id=1, last_run=0)
-        session.add(last_run)
-
-    # increment
-    last_run.last_run += 1
-    state.current_run_number = last_run.last_run
-    await session.commit()
-    if not state.is_configured:
-        await instrument.configure()
-        state.is_configured = True
+    if not dot_env.DEBUG:
+        if not state.is_configured:
+            await instrument.configure()
+            state.is_configured = True
 
     state.is_measuring = True
 
@@ -148,20 +153,28 @@ async def start_measurement(session: AsyncSession = Depends(get_async_session),
         try:
             while state.is_measuring:
                 # читаем данные с прибора
-                t_values = await instrument.read_data()  # например, [t201, t202, ...]
+                if not dot_env.DEBUG:
+                    t_values = await instrument.read_data()  # например, [t201, t202, ...]
+                else:
+                    t_values = {f'{key}': float(val + 1) for key, val in TEMP_DATA.items()}
+                    for i,v in TEMP_DATA.items():
+                        TEMP_DATA[i] += 1
+                print(f'{t_values=}')
                 # сохраняем в БД
                 record_t = {}
                 for t in t_values.keys():
                     record_t[f't{t}'] = t_values.get(t)
+                print(f'{record_t=}')
                 new_record = models.Measurement(
                     run_id=state.current_run_number,
                     **record_t
                 )
-                session.add(new_record)  # sync_session — если ты используешь async engine
-                await session.commit()
+                async with request.app.state.db_sessionmaker() as session:
+                    session.add(new_record)  # sync_session — если ты используешь async engine
+                    await session.commit()
 
                 # отправка по WebSocket
-                await manager.broadcast(message={'data': t_values,})
+                await manager.broadcast(message={'data': t_values, })
                 await asyncio.sleep(state.timer_seconds)
         except asyncio.CancelledError:
             logger.error("Measurement loop cancelled")
@@ -201,21 +214,28 @@ async def set_timer(state=Depends(get_measurement_state), payload: dict = None):
 
 
 @router.post("/api/configure")
-async def configure_device(state=Depends(get_measurement_state),
+async def configure_device(request: Request,
+                           state=Depends(get_measurement_state),
                            instrument: DAQ_34970A = Depends(get_instrument_state), ):
     """Асинхронная конфигурация прибора"""
     if state.is_configured:
         return {"status": "already_configured"}
 
     try:
-        await instrument.configure()
-        if instrument.is_configured:
+        if not request.app.state.dot_env.DEBUG:
+            await instrument.configure()
+            if instrument.is_configured:
+                state.is_configured = True
+            else:
+                state.is_configured = False
+        else:
             state.is_configured = True
+
+        if state.is_configured:
             return {"status": "configured"}
 
         else:
-            state.is_configured = False
-            return {"status": "NOT configured"}
+            return {"status": "not_configured"}
 
     except Exception as e:
         state.is_configured = False

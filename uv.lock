@@ -962,6 +962,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "pyvisa" },
     { name = "pyvisa-py" },
+    { name = "sqlalchemy" },
     { name = "uvicorn" },
     { name = "zeroconf" },
 ]
@@ -979,6 +980,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyvisa", specifier = ">=1.15.0" },
     { name = "pyvisa-py", specifier = ">=0.8.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.43" },
     { name = "uvicorn", specifier = ">=0.37.0" },
     { name = "zeroconf", specifier = ">=0.148.0" },
 ]

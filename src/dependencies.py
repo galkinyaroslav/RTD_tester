@@ -34,5 +34,12 @@ def get_templates_state(request: Request):
     return request.app.state.templates
 
 
+def get_TEMP_DATA_state(request: Request):
+    """
+    Dependency, return templates from app.state
+    """
+    return request.app.state.TEMP_DATA
+
+
 
 

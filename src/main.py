@@ -31,9 +31,22 @@ async def lifespan(app: FastAPI):
     logger.info("Run apt PT100 Monitor")
     app.state.measurement = MeasurementState()
     app.state.ws_connection_manager = ConnectionManager()
-    app.state.instrument = DAQ_34970A()
-    await app.state.instrument.connect()
+
     app.state.dot_env = get_settings()
+
+    if not app.state.dot_env.DEBUG:
+        app.state.instrument = DAQ_34970A()
+        await app.state.instrument.connect()
+
+    else:
+        app.state.TEMP_DATA = {'201': 1,
+                               '202': 2,
+                               '203': 3,
+                               # '204': 4,
+                               '205': 5,
+                               '206': 6,}
+        app.state.instrument = None
+
     app.state.templates = Jinja2Templates(directory=Path(BASE_DIR,'templates'))
     # DATABASE_URL = (f'postgresql+asyncpg://{app.state.dot_env.DB_USER}:'
     #                 f'{app.state.dot_env.DB_PASS}@'
@@ -49,8 +62,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     app.state.measurement.is_measuring = False
     # app.state.measurement.is_recording = False
-    if app.state.instrument.connected:
-        await app.state.instrument.disconnect()
+    if not app.state.dot_env.DEBUG:
+        if app.state.instrument.connected:
+            await app.state.instrument.disconnect()
     # app.state.instrument.close()
     logger.info("Stop apt PT100 Monitor")
 

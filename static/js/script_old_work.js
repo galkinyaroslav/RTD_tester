@@ -1,4 +1,6 @@
-document.addEventListener("DOMContentLoaded", () => {
+// document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ DOM fully loaded");
+
     // console.log(`${window.location.host}`); // 127.0.0.1:8000
     const connectionStatus = document.getElementById("connectionStatus");
     const btnStart = document.getElementById("btnStart");
@@ -134,5 +136,5 @@ document.addEventListener("DOMContentLoaded", () => {
             btnStop.disabled = true;
         }
     });
-});
+// });
 

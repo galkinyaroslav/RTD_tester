@@ -86,7 +86,10 @@
                     console.log("📡 Новые T:", t);
 
                     chartData.labels.push(t);
+                    console.log('msg.data',msg.data)
                     const temps = Object.values(msg.data);
+                    // console.log("TEMPS",temps);
+                    console.log('temp=',temps)
                     temps.forEach((v, i) => chartData.datasets[i].data.push(v));
                     chart.update();
                     console.log(card)

@@ -38,7 +38,9 @@ def get_TEMP_DATA_state(request: Request):
     """
     Dependency, return templates from app.state
     """
-    return request.app.state.TEMP_DATA
+    if request.app.state.dot_env.DEBUG:
+        return request.app.state.TEMP_DATA
+    # return request.app.state.TEMP_DATA
 
 
 

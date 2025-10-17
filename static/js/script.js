@@ -13,9 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let ws = null;
     let chart = null;
-    let channels = [];          // ordered array of channel keys as strings
-    let datasetsMap = {};       // key -> dataset object (Chart dataset)
-    let history = {};           // key -> [{x:Date, y:Number},...]
+    let channels = [];         // ordered array of channel keys as strings
+    const datasetsMap = {
+        labels: [],
+        datasets: [{},]
+    };        // key -> dataset object (Chart dataset)
+    let history = {};            // key -> [{x:Date, y:Number},...]
 
     function log(...args) {
         console.log("[pt100-ui]", ...args);
@@ -50,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         chart = new Chart(ctx, {
             type: "line",
-            data: {labels: [], datasets: [] },
+            data: datasetsMap,
             options: {
                 responsive: true,
                 animation: false,
@@ -78,7 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dataGrid.innerHTML = "";
         channels = newKeys.slice();
         history = {};
-        datasetsMap = {};
+        datasetsMap.labels = [];
+        datasetsMap.datasets = [];
 
         for (const k of channels) {
             // create card
@@ -92,28 +96,31 @@ document.addEventListener("DOMContentLoaded", () => {
         // rebuild chart datasets
         if (chart) {
 
-            chart.data.datasets = []; // clear
-            chart.data.labels = [];
+            chart.data = datasetsMap; // clear
         } else {
             ensureChartExists();
         }
-        // const time = new Date().toLocaleTimeString();
-        // chart.labels.push(time);
 
         for (const k of channels) {
+
             const ds = {
                 label: `Канал ${k}`,
                 data: [], // will be array of {x: Date, y: Number}
                 borderWidth: 2,
-                tension: 0.15,
-                fill: false,
-                parsing: false
+                // tension: 0.15,
+                // fill: false,
+                // parsing: false
             };
-            datasetsMap[k] = ds;
-            chart.data.datasets.push(ds);
+            datasetsMap.datasets.push(ds);
+            // chart.data.datasets.push(ds);
+            console.log('datasetsMap[k]=',datasetsMap[k]);
+
+
         }
-        const time = new Date().toLocaleTimeString();
-        chart.data.labels.push(time);
+        console.log('datasetsMap=',datasetsMap);
+
+        console.log('CHARTDATASET',chart.data.datasets);
+
         chart.update();
     }
 
@@ -129,28 +136,40 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const now = new Date().toLocaleTimeString();
-
+        datasetsMap.labels.push(now);
         for (const k of keys) {
             const v = t_values[k];
+            // console.log('k=', k);
+            // console.log('v=', v);
             // update card
             const el = document.getElementById(`t${k}`);
             if (el) {
-                if (typeof v === "number") el.textContent = `${v.toFixed(2)} °C`;
+                if (typeof v === "number") el.textContent = `${v.toFixed(3)} °C`;
                 else el.textContent = "-- °C";
             }
-            // update history
+            // // update history
             // if (!history[k]) history[k] = [];
             // history[k].push({x: now, y: (typeof v === "number" ? v : null)});
             // if (history[k].length > 100) history[k].shift();
 
             // set dataset data (Chart expects array of objects with x,y)
-            // if (datasetsMap[k]) {
-            //     datasetsMap[k].data = history[k].map(p => ({x: p.x, y: p.y}));
+            // if (datasetsMap.datasets[k]) {
+            // datasetsMap.datasets[k].push(v);
             // }
-            chart.data.dataset.push(v)
 
         }
-        chart.data.labels.push(now)
+        // console.log('T_VALUES=',t_values)
+        // const temps = Object.values(t_values.data);
+        // console.log('temps=',temps)
+        // temps.forEach((v, i) => datasetsMap.datasets[i].data.push(v));
+
+
+        for(let i = 0; i < keys.length; i++){
+            datasetsMap.datasets[i].data.push(t_values[keys[i]]);
+        }
+
+        console.log('chart.data.datasets=',chart.data.datasets)
+        console.log('datasetsMap',datasetsMap)
         // update chart
         try {
             chart.update();
@@ -219,7 +238,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnStart.addEventListener("click", async () => {
         const timer = parseInt(timerInput.value);
+
         // chart.destroy();
+        // datasetsMap.datasets.data = [];
+        // datasetsMap.labels = [];
+        // chart.data = datasetsMap;
+        chart.clear();
+        rebuildUIAndChart(channels);
         await fetch("/pt100/api/configure", {
             method: "POST",
             headers: {"Content-Type": "application/json"},

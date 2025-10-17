@@ -2,6 +2,8 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+EXCEL_DIR = BASE_DIR / 'excel'
+EXCEL_DIR.mkdir(parents=True, exist_ok=True)
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache

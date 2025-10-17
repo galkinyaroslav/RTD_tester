@@ -97,7 +97,7 @@ button:active {
     color: white;
 }
 
-.btn-download {
+.btn-excel {
     background: var(--warning-color);
     color: var(--dark-color);
 }

@@ -16,11 +16,12 @@ import json
 
 from urllib3 import request
 
-from src.core.config import Settings
-from sqlalchemy import select
+from src.core.config import Settings, EXCEL_DIR
+from sqlalchemy import select, inspect
 
 from src import schemas, models
 from src.core.config import BASE_DIR
+from src.database import get_async_session
 from src.state import MeasurementState
 from src.dependencies import get_ws_connection_manager_state, get_measurement_state, get_instrument_state, \
     get_templates_state, get_dot_env_state, get_TEMP_DATA_state
@@ -129,7 +130,7 @@ async def start_measurement(request: Request,
                             ):
     if state.is_measuring:
         return {"status": "already_running"}
-    async with request.app.state.db_sessionmaker() as session: # FOR SEVERAL sessions(front tasks, threads) in endpoint
+    async with request.app.state.db_sessionmaker() as session:  # FOR SEVERAL sessions(front tasks, threads) in endpoint
         # получаем last_run из БД
         result = await session.execute(select(models.LastRun).limit(1))
         last_run = result.scalar_one_or_none()
@@ -157,7 +158,7 @@ async def start_measurement(request: Request,
                     t_values = await instrument.read_data()  # например, [t201, t202, ...]
                 else:
                     t_values = {f'{key}': float(val + 1) for key, val in TEMP_DATA.items()}
-                    for i,v in TEMP_DATA.items():
+                    for i, v in TEMP_DATA.items():
                         TEMP_DATA[i] += 1
                 print(f'{t_values=}')
                 # сохраняем в БД
@@ -167,6 +168,7 @@ async def start_measurement(request: Request,
                 print(f'{record_t=}')
                 new_record = models.Measurement(
                     run_id=state.current_run_number,
+                    measure_datetime= datetime.now(),
                     **record_t
                 )
                 async with request.app.state.db_sessionmaker() as session:
@@ -185,7 +187,7 @@ async def start_measurement(request: Request,
 
     task = asyncio.create_task(measurement_loop())
     state.measurement_task = task
-    return {"status": "started", "run_number": state.current_run_number}
+    return {"status": "started", }
 
 
 @router.post("/api/stop")
@@ -204,6 +206,13 @@ async def stop_measurement(state=Depends(get_measurement_state)):
             pass
 
     return {"status": "stopped"}
+
+
+@router.get("/api/status")
+async def status(state=Depends(get_measurement_state)):
+    return {"run_number": state.current_run_number,
+            "measuring": state.is_measuring,
+            "connected": state.is_connected, }
 
 
 @router.post("/api/state/timer")
@@ -240,3 +249,27 @@ async def configure_device(request: Request,
     except Exception as e:
         state.is_configured = False
         return {"status": "error", "detail": str(e)}
+
+@router.post("/to_excel")
+async def to_excel(state=Depends(get_measurement_state),
+                   session=Depends(get_async_session)):
+        # получаем last_run из БД
+        result = await session.execute(select(models.Measurement)
+                                       .where(models.Measurement.run_id == state.current_run_number)
+                                       .order_by(models.Measurement.measure_datetime))
+        rows = result.scalars().all()
+
+        mapper = inspect(models.Measurement)
+        columns = [col.key for col in mapper.columns]
+
+        # Преобразуем объекты SQLAlchemy в словари
+        data = [{col: getattr(row, col) for col in columns} for row in rows]
+
+        # В DataFrame
+        df = pd.DataFrame(data)
+
+        # Сохраняем в Excel
+        filename = f"RUN_{state.current_run_number}_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+        df.to_excel(Path(EXCEL_DIR, filename), index=False)
+        return {'status': 'Done'}
+

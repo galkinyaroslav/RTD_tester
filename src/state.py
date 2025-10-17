@@ -8,6 +8,7 @@ class MeasurementState:
         self.current_run_number = 0
         # self.measurement_thread = None
         self.is_configured = False
+        self.is_connected = False
         self.config_thread = None
         self.measurement_task: asyncio.Task | None = None
 

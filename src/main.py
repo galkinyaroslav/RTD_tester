@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 
     if not app.state.dot_env.DEBUG:
         app.state.instrument = DAQ_34970A()
-        await app.state.instrument.connect()
+        app.state.measurement.is_connected = await app.state.instrument.connect()
 
     else:
         app.state.TEMP_DATA = {'201': 1,
